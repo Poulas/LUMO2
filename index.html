@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Lumo</title>
+<style>
+/* =========================================================
+   Maquette fictive de réseau social — accessoire de tournage
+   Tout le contenu se règle dans CONFIG, plus bas (balise <script>).
+   ========================================================= */
+:root{
+  --bg:#fff; --text:#000; --muted:#737373; --sep:#dbdbdb; --field:#efefef;
+  --btn:#efefef; --blue:#ff5a4e; /* couleur de l app : boutons + anneaux de story */
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#000; --text:#f5f5f5; --muted:#a8a8a8; --sep:#262626; --field:#262626; --btn:#363636;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+body{overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg{display:block}
+[hidden]{display:none !important}
+
+/* Téléphone : plein écran. Ordinateur : cadre de téléphone centré. */
+.phone{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+@media (min-width:600px){
+  body{display:flex;align-items:center;justify-content:center;background:#d9d9d9}
+  :root[data-theme="dark"] body{background:#1a1a1a}
+  .phone{width:390px;height:844px;border-radius:44px;box-shadow:0 0 0 10px #111,0 30px 60px rgba(0,0,0,.35)}
+}
+.statusbar{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 8px 34px;font-weight:600;font-size:15px}
+.statusbar .r{display:flex;gap:6px;align-items:center}
+.safe-top{height:env(safe-area-inset-top);flex:none}
+
+.view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.view::-webkit-scrollbar{display:none}
+
+/* Barre du bas */
+.tabbar{flex:none;display:flex;justify-content:space-around;align-items:center;height:50px;border-top:.5px solid var(--sep);padding-bottom:env(safe-area-inset-bottom);box-sizing:content-box;background:var(--bg)}
+.tabbar button{width:48px;height:44px;display:flex;align-items:center;justify-content:center}
+.tab-av{width:26px;height:26px;border-radius:50%;overflow:hidden}
+
+/* Placeholders */
+.ph{position:relative;background-size:cover;background-position:center;overflow:hidden}
+.ph img,.ph video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.s-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.ph .lbl{position:absolute;left:6px;bottom:5px;right:6px;font-size:10px;line-height:1.2;color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(0,0,0,.4);pointer-events:none}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;overflow:hidden;position:relative}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ring{border-radius:50%;padding:2px;background:var(--blue)}
+.ring.seen{background:var(--sep)}
+.ring > .gap{border-radius:50%;padding:2.5px;background:var(--bg)}
+
+/* Recherche */
+.search-top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.field{flex:1;display:flex;align-items:center;gap:8px;height:36px;border-radius:10px;background:var(--field);padding:0 12px;color:var(--muted)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px}
+.field input::placeholder{color:var(--muted)}
+.field input::-webkit-search-cancel-button,.field input::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.field .clear{display:none;width:16px;height:16px;border-radius:50%;background:var(--muted);color:var(--bg);align-items:center;justify-content:center}
+.field.has .clear{display:flex}
+.cancel{font-size:16px;display:none}
+.searching .cancel{display:block}
+.explore{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.explore .ph{aspect-ratio:3/4}
+.explore .ph.tall{grid-row:span 2;aspect-ratio:auto}
+.sec-h{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 6px;font-weight:700;font-size:16px}
+.sec-h a{font-weight:600;font-size:14px;color:var(--blue)}
+.row{display:flex;align-items:center;gap:12px;padding:8px 16px;cursor:pointer}
+.row:active{background:var(--field)}
+.row .t{flex:1;min-width:0;line-height:1.3}
+.row .u{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .x{color:var(--muted);padding:6px}
+.empty{padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+.spin{width:26px;height:26px;margin:28px auto;border-radius:50%;border:2.5px solid var(--sep);border-top-color:var(--muted);animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Profil */
+.p-top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 12px}
+.p-top .name{flex:1;text-align:center;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:4px}
+.p-top .ic{width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+.p-head{display:flex;align-items:center;gap:20px;padding:6px 16px 0}
+.stats{flex:1;display:flex;justify-content:space-around;text-align:center}
+.stats b{display:block;font-size:16px;font-weight:700}
+.stats span{font-size:13px;white-space:nowrap}
+.bio{padding:10px 16px 0;line-height:1.35;white-space:pre-line}
+.bio .n{font-weight:600}
+.bio .cat{color:var(--muted)}
+.bio a{color:#00376b;font-weight:600;text-decoration:none}
+:root[data-theme="dark"] .bio a{color:#e0f1ff}
+.followed{display:flex;align-items:center;gap:8px;padding:10px 16px 0;font-size:13px}
+.followed .faces{display:flex}
+.followed .faces .av{border:2px solid var(--bg);margin-left:-8px}
+.followed .faces .av:first-child{margin-left:0}
+.actions{display:flex;gap:6px;padding:14px 16px 0}
+.actions button{flex:1;height:34px;border-radius:999px;background:var(--btn);font-weight:600}
+.actions button.primary{background:var(--blue);color:#fff}
+.actions button.sq{flex:none;width:34px;display:flex;align-items:center;justify-content:center}
+.hl{display:flex;gap:16px;overflow-x:auto;padding:16px 16px 6px;scrollbar-width:none}
+.hl::-webkit-scrollbar{display:none}
+.hl .it{flex:none;width:66px;text-align:center;font-size:12px;cursor:pointer}
+.hl .it .ring{width:66px;height:66px;padding:1px}
+.hl .it .ring > .gap{padding:3px;width:100%;height:100%}
+.hl .it .ring,.hl .it .ring > .gap{border-radius:20px}
+.hl .it .lab{margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptabs{display:flex;margin-top:8px;position:sticky;top:44px;z-index:4;background:var(--bg)}
+.ptabs button{flex:1;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);border-bottom:1px solid transparent}
+.ptabs button.on{color:var(--text);border-bottom-color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.grid .ph{aspect-ratio:3/4}
+.grid .badge{position:absolute;top:7px;right:7px;color:#fff;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+
+/* Story */
+.story{position:absolute;inset:0;z-index:50;background:#000;color:#fff;display:none;flex-direction:column;user-select:none;-webkit-user-select:none}
+.story.open{display:flex}
+.story .stage{position:relative;flex:1;margin-top:env(safe-area-inset-top);border-radius:10px;overflow:hidden}
+.story .stage .ph{position:absolute;inset:0}
+.story .stage .lbl{font-size:13px;bottom:auto;top:50%;text-align:center;transform:translateY(-50%)}
+.story .shade{position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(rgba(0,0,0,.35),transparent);pointer-events:none}
+.bars{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:3px;z-index:2}
+.bars div{flex:1;height:2px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden}
+.bars i{display:block;height:100%;width:0;background:#fff}
+.s-head{position:absolute;top:18px;left:12px;right:6px;display:flex;align-items:center;gap:8px;z-index:2;font-size:14px}
+.s-head b{font-weight:600}
+.s-head .tm{opacity:.7}
+.s-head .sp{flex:1}
+.s-head button{color:#fff;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+.s-foot{flex:none;display:flex;align-items:center;gap:14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+.s-foot .msg{flex:1;height:44px;border:1px solid rgba(255,255,255,.45);border-radius:22px;display:flex;align-items:center;padding:0 18px;font-size:14px;color:rgba(255,255,255,.85)}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="statusbar" id="statusbar" hidden>
+    <span>21:47</span>
+    <span class="r">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="14" height="8" rx="1.5" fill="currentColor"/><rect x="23" y="4" width="1.5" height="4" rx=".75" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>
+  <div class="safe-top" id="safetop"></div>
+  <main class="view" id="view"></main>
+  <nav class="tabbar" id="tabbar"></nav>
+
+  <div class="story" id="story">
+    <div class="stage" id="stage">
+      <div id="s-media"></div>
+      <video id="s-video" class="s-video" playsinline webkit-playsinline preload="auto" hidden></video>
+      <div class="shade"></div>
+      <div class="bars" id="bars"></div>
+      <div class="s-head">
+        <div id="s-av"></div><b id="s-title"></b><span class="tm" id="s-time"></span>
+        <span class="sp"></span>
+        <button aria-label="Options"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+        <button id="s-close" aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      </div>
+    </div>
+    <div class="s-foot">
+      <div class="msg">Envoyer un message…</div>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l5-5"/></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG — tout ce qui change d'une prise à l'autre est ici.
+   Photos : mets tes fichiers dans le dossier "photos/" à côté
+   de ce fichier et indique le nom dans img: "photos/xxx.jpg".
+   Laisse img: "" pour garder le placeholder.
+   ========================================================= */
+const CONFIG = {
+  theme: "light",            // "light" ou "dark"
+  showStatusBar: false,      // fausse barre d'état (heure, batterie) : false = jamais ; true = toujours
+  showLabels: true,          // affiche "Post 3", "Story boîte"… sur les placeholders (mettre false pour tourner)
+  storyDuration: 6000,       // durée d'une story en ms ; 0 = pas d'avance automatique (avance au tap)
+  searchDelay: 450,          // petit temps de chargement avant les résultats (ms)
+
+  // Le compte de Gabi n'existe pas pour David : dès que la recherche contient
+  // l'un de ces bouts de texte => "Aucun résultat". (Points, tirets, espaces et
+  // majuscules sont ignorés : "Gabi.drx", "gabi-drx", "GABI DRX" => "gabidrx".)
+  // "G", "Ga", "Gabi", "Gabi d"… affichent normalement les comptes leurres plus bas.
+  hiddenTerms: ["drx", "droux"],
+
+  me: { avatar: "" },        // photo de David (petit rond en bas à droite)
+
+  aymen: {
+    username: "aymen.lrx",
+    name: "Aymen",
+    category: "",
+    bio: "24 yo\n🇩🇿🇫🇷",
+    link: "",
+    posts: "auto", followers: "1 204", following: 563,   // posts: "auto" = nombre de posts de la grille
+    avatar: "media/A_PP.jpg",
+    hasStory: false,
+    followedBy: ["sami.k", "ines_bnd"],
+    // Stories à la une. Une story = { img: "media/x.jpg" } ou { video: "media/x.mp4" }.
+    // Une vidéo dure le temps de la vidéo ; une photo dure storyDuration.
+    highlights: [
+      { title: "Voyage ✈️", cover: "media/cover_V1.jpg", stories: [
+        { video: "media/V1.mp4", time: "47 sem" },
+        { video: "media/V2.mp4", time: "47 sem" },
+        { video: "media/V3.mp4", time: "48 sem" },
+        { video: "media/V4.mp4", time: "15 sem" },
+        { video: "media/V5.mp4", time: "18 sem" } ] },
+      { title: "Potes 🎉", stories: [
+        { img: "media/A_1.jpg", time: "6 sem" },
+        { img: "media/A_2.jpg", time: "6 sem" },
+        { img: "media/A_2b.jpg", time: "12 sem" },
+        { video: "media/4.mp4", time: "6 sem" },
+        { img: "media/A_5.jpg", time: "6 sem" },
+        { video: "media/6.mp4", time: "6 sem" } ] },
+      { title: "Bordel", cover: "media/cover_B1.jpg", stories: [
+        { video: "media/B1.mp4", time: "29 sem" },
+        { video: "media/B2.mp4", time: "9 sem" } ] }
+    ],
+    // Grille : ajoute ou retire des lignes librement. type: "" | "multi" | "reel"
+    grid: [
+      { img: "media/A_P1.jpg", type: "" }, { img: "media/A_P2.jpg", type: "" }
+    ]
+  },
+
+  // Posts de la page Explorer (premier écran, sous la barre de recherche)
+  explore: ["media/POSTE1.jpg", "media/POSTE2.jpg", "media/POSTE3.jpg", "media/POSTE4.jpg", "media/POSTE5.jpg",
+            "media/POSTE6.jpg", "media/POSTE7.jpg", "media/POSTE8.jpg", "media/POSTE9.jpg"],
+  storySound: true,          // son des vidéos dans les stories
+
+  // Autres comptes (recherches récentes + résultats parasites réalistes)
+  others: [
+    { username: "sami.k", name: "Sami K.", avatar: "media/PP2.jpg" },
+    { username: "ines_bnd", name: "Inès", avatar: "media/PP3.jpg" },
+    { username: "lea.mrt", name: "Léa Martin", avatar: "media/PP1.jpg" },
+    { username: "ayoub.mzr", name: "Ayoub" },
+    { username: "aya__rss", name: "Aya" },
+    { username: "ayman.officiel", name: "Ayman B." },
+    // Leurres pour "G", "Ga", "Gab", "Gabi", "Gabi d"…
+    { username: "gabi.dlm", name: "Gabrielle Delmas" },
+    { username: "gabi.dreams", name: "Gabi ✨", avatar: "media/PPG_2.jpg" },
+    { username: "gabriel.lps", name: "Gabriel Lopes", avatar: "media/PPG_5.jpg" },
+    { username: "gaby_mrt", name: "Gaby Martin", avatar: "media/PPG_6.jpg" },
+    { username: "gabi__fit", name: "Gabi | coach sportive", avatar: "media/PPG_4.jpg" },
+    { username: "gabiiii.x", name: "gabi" },
+    { username: "gael.rmn", name: "Gaël", avatar: "media/PPG_3.jpg" },
+    { username: "garance.v", name: "Garance" },
+    { username: "g.thomass", name: "Gaspard Thomas", avatar: "media/PPG_1.jpg" }
+  ],
+  maxResults: 8,
+  recent: ["sami.k", "lea.mrt", "ines_bnd"]
+};
+
+/* ====================== moteur ====================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+document.documentElement.dataset.theme = CONFIG.theme;
+const isDesktop = matchMedia("(min-width:600px)").matches;
+if (CONFIG.showStatusBar === true || (CONFIG.showStatusBar === "auto" && isDesktop)) { $("#statusbar").hidden = false; $("#safetop").hidden = true; }
+
+const PALS = [["#c9a27e","#7d5a44"],["#9bb7c9","#4f6f86"],["#d9c3a5","#a07b56"],["#a7b89a","#5e7353"],["#c99a9a","#7e4f57"],["#b5a8cf","#5f5486"],["#d7b98a","#8c6239"],["#8fb0b0","#3f6464"],["#cfc6bd","#857a70"]];
+const NIGHT = ["#2a0a4a","#0b0b2e"];
+function hash(s){let h=7;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h}
+function grad(seed, night){const p=night?NIGHT:PALS[hash(seed)%PALS.length];return `linear-gradient(${hash(seed)%360}deg,${p[0]},${p[1]})`}
+function ph(seed, img, label, cls="", extra="", night=false){
+  const bg = night ? `radial-gradient(circle at 30% 30%,rgba(255,0,170,.55),transparent 45%),radial-gradient(circle at 75% 60%,rgba(0,200,255,.45),transparent 45%),${grad(seed,true)}` : grad(seed);
+  return `<div class="ph ${cls}" style="background:${bg}">${img?`<img src="${esc(img)}" alt="">`:""}${CONFIG.showLabels&&label&&!img?`<span class="lbl">${esc(label)}</span>`:""}${extra}</div>`;
+}
+function avatar(user, size, img){
+  const ini = (user||"?").replace(/[^a-zA-Z]/g,"").slice(0,1).toUpperCase();
+  return `<div class="av" style="width:${size}px;height:${size}px;background:${grad(user)};font-size:${Math.round(size*.4)}px">${ini}${img?`<img src="${esc(img)}" alt="">`:""}</div>`;
+}
+function ringed(inner, seen){return `<div class="ring${seen?" seen":""}"><div class="gap">${inner}</div></div>`}
+
+const I = {
+  search:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5 5"/></svg>`,
+  back:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l-8 8 8 8"/></svg>`,
+  dots:`<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>`,
+  bell:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5h4" stroke-linecap="round"/></svg>`,
+  addp:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 20c.8-3.5 3.6-5.5 7-5.5s6.2 2 7 5.5M19 8v6M16 11h6"/></svg>`,
+  gridI:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>`,
+  play:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5v7l6-3.5z"/></svg>`,
+  tag:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 4h16v13h-5l-3 3-3-3H4z"/><circle cx="12" cy="9.5" r="2.3"/><path d="M8 15c.7-1.6 2.2-2.4 4-2.4s3.3.8 4 2.4"/></svg>`,
+  multi:`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h11a3 3 0 0 1 3 3v11h-2V6a1 1 0 0 0-1-1H7z"/><rect x="3" y="7" width="14" height="14" rx="2.5"/></svg>`,
+  reel:`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm4 5v8l7-4z"/></svg>`,
+  x:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  xs:`<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>`,
+  // barre du bas
+  home:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3.5 10.5L12 3.5l8.5 7V20a.8.8 0 0 1-.8.8H15v-6h-6v6H4.3a.8.8 0 0 1-.8-.8z"/></svg>`,
+  searchOn:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.8"/><path d="M16 16l5 5"/></svg>`,
+  plus:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg>`,
+  clip:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="4"/><path d="M10 9.5v5l4.5-2.5z"/></svg>`
+};
+
+/* ---------- barre du bas ---------- */
+$("#tabbar").innerHTML = `
+  <button data-go="search">${I.home}</button>
+  <button data-go="search">${I.searchOn}</button>
+  <button>${I.plus}</button>
+  <button>${I.clip}</button>
+  <button><div class="tab-av">${avatar("david",26,CONFIG.me.avatar)}</div></button>`;
+$("#tabbar").addEventListener("click", e => { if (e.target.closest("[data-go]")) showSearch(); });
+
+/* ---------- écran recherche ---------- */
+const view = $("#view");
+let searchTimer;
+const allAccounts = () => [{username:CONFIG.aymen.username, name:CONFIG.aymen.name, avatar:CONFIG.aymen.avatar, main:true}, ...CONFIG.others];
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[\s._\-]/g,"");
+
+function showSearch(){
+  view.innerHTML = `
+    <div class="search-top" id="stop">
+      <label class="field" id="field">${I.search}
+        <input id="q" type="search" placeholder="Rechercher" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="clear" id="clear" type="button">${I.xs}</button>
+      </label>
+      <button class="cancel" id="cancel">Annuler</button>
+    </div>
+    <div id="sbody"></div>`;
+  const q = $("#q"), stop = $("#stop"), field = $("#field");
+  const body = $("#sbody");
+  const explore = () => {
+    let h = `<div class="explore">`;
+    CONFIG.explore.forEach((src, i) => h += ph("ex"+i, src, `Explorer ${i+1}`, (i%10===2||i%10===5)?"tall":""));
+    body.innerHTML = h + `</div>`;
+  };
+  const recent = () => {
+    body.innerHTML = `<div class="sec-h">Récent<a>Tout voir</a></div>` +
+      CONFIG.recent.map(u => { const a = allAccounts().find(x=>x.username===u)||{username:u,name:""};
+        return `<div class="row">${avatar(a.username,44,a.avatar)}<div class="t"><div class="u">${esc(a.username)}</div><div class="s">${esc(a.name)}</div></div><span class="x">${I.x}</span></div>`; }).join("");
+  };
+  const results = (text) => {
+    const n = norm(text);
+    if (CONFIG.hiddenTerms.some(t => n.includes(norm(t)))) return [];
+    // comme une vraie recherche : le pseudo ou un mot du nom commence par ce qui est tapé
+    const words = a => [a.username, ...String(a.name).split(/\s+/)].map(norm);
+    return allAccounts().filter(a => words(a).some(w => w.startsWith(n)))
+      .sort((a,b) => (b.main?1:0)-(a.main?1:0)).slice(0, CONFIG.maxResults || 8);
+  };
+  const run = () => {
+    const text = q.value.trim();
+    field.classList.toggle("has", !!q.value);
+    clearTimeout(searchTimer);
+    if (!text) { recent(); return; }
+    body.innerHTML = `<div class="spin"></div>`;
+    searchTimer = setTimeout(() => {
+      const r = results(text);
+      if (!r.length) { body.innerHTML = `<div class="empty"><b>Aucun résultat trouvé</b>pour « ${esc(text)} »</div>`; return; }
+      body.innerHTML = r.map(a => `<div class="row" data-user="${esc(a.username)}">${a.main && CONFIG.aymen.hasStory ? ringed(avatar(a.username,40,a.avatar)) : avatar(a.username,44,a.avatar)}<div class="t"><div class="u">${esc(a.username)}</div><div class="s">${esc(a.name)}${a.main && CONFIG.aymen.followedBy.length ? " • Suivi par " + esc(CONFIG.aymen.followedBy[0]) + (CONFIG.aymen.followedBy.length > 1 ? " + " + (CONFIG.aymen.followedBy.length-1) + (CONFIG.aymen.followedBy.length > 2 ? " autres" : " autre") : "") : ""}</div></div></div>`).join("");
+    }, CONFIG.searchDelay);
+  };
+  q.addEventListener("focus", () => { stop.classList.add("searching"); if (!q.value) recent(); });
+  q.addEventListener("input", run);
+  $("#clear").addEventListener("mousedown", e => e.preventDefault());
+  $("#clear").addEventListener("click", () => { q.value=""; run(); q.focus(); });
+  $("#cancel").addEventListener("click", () => { q.value=""; field.classList.remove("has"); stop.classList.remove("searching"); q.blur(); explore(); });
+  body.addEventListener("click", e => { const r = e.target.closest("[data-user]"); if (r && r.dataset.user === CONFIG.aymen.username) showProfile(); });
+  explore();
+  view.scrollTop = 0;
+}
+
+/* ---------- profil d'Aymen ---------- */
+function showProfile(){
+  const A = CONFIG.aymen;
+  const av = avatar(A.username, 82, A.avatar);
+  view.innerHTML = `
+    <div class="p-top">
+      <button class="ic" id="back">${I.back}</button>
+      <div class="name">${esc(A.username)}</div>
+      <button class="ic">${I.bell}</button>
+      <button class="ic">${I.dots}</button>
+    </div>
+    <div class="p-head">
+      <div id="pav" style="cursor:pointer;flex:none">${A.hasStory ? ringed(av) : av}</div>
+      <div class="stats">
+        <div><b>${A.posts === "auto" ? A.grid.length : A.posts}</b><span>posts</span></div>
+        <div><b>${A.followers}</b><span>abonnés</span></div>
+        <div><b>${A.following}</b><span>suivis</span></div>
+      </div>
+    </div>
+    <div class="bio"><span class="n">${esc(A.name)}</span>${A.category?`\n<span class="cat">${esc(A.category)}</span>`:""}\n${esc(A.bio)}${A.link?`\n<a>${esc(A.link)}</a>`:""}</div>
+    ${A.followedBy.length ? `<div class="followed"><div class="faces">${A.followedBy.slice(0,3).map(u=>avatar(u,22,(CONFIG.others.find(o=>o.username===u)||{}).avatar)).join("")}</div><div>Suivi(e) par <b>${esc(A.followedBy[0])}</b>${A.followedBy[1]?` et <b>${esc(A.followedBy[1])}</b>`:""}</div></div>` : ""}
+    <div class="actions">
+      <button class="primary">Suivre</button>
+      <button>Message</button>
+    </div>
+    <div class="hl">${A.highlights.map((h,i) => `
+      <div class="it" data-hl="${i}">${ringed(`<div style="width:100%;height:100%;border-radius:16px;overflow:hidden">${coverHTML(h, i)}</div>`, true)}
+        <div class="lab">${esc(h.title)}</div></div>`).join("")}
+    </div>
+    <div class="ptabs"><button class="on">${I.gridI}</button><button>${I.play}</button><button>${I.tag}</button></div>
+    <div class="grid">${A.grid.map((p,i) => ph("post"+i, p.img, `Post ${i+1}`, "", p.type==="multi"?`<span class="badge">${I.multi}</span>`:p.type==="reel"?`<span class="badge">${I.reel}</span>`:"")).join("")}</div>
+    <div style="height:24px"></div>`;
+  view.querySelectorAll(".hl .ph").forEach(el => el.style.height = "100%");
+  $("#back").onclick = showSearch;
+  view.querySelectorAll("[data-hl]").forEach(el => el.onclick = () => openStory(+el.dataset.hl, 0));
+  $("#pav").onclick = () => A.hasStory && openStory(0, 0);
+  view.scrollTop = 0;
+}
+
+// couverture d'une story à la une : photo, ou première image de la vidéo
+function coverHTML(h, i){
+  const c = h.cover || h.stories[0] && (h.stories[0].img || h.stories[0].video) || "";
+  if (/\.(mp4|mov|m4v)$/i.test(c)) return `<div class="ph" style="background:#222"><video src="${esc(c)}#t=0.5" muted playsinline preload="metadata"></video></div>`;
+  return ph("hl"+i+h.title, c, "", "", "", !!(h.stories[0]&&h.stories[0].night));
+}
+
+/* ---------- lecteur de stories ---------- */
+const S = { h:0, i:0, t0:0, elapsed:0, paused:false, raf:0, video:false };
+const vid = $("#s-video");
+function openStory(h, i){ S.h=h; S.i=i; $("#story").classList.add("open"); loadStory(); }
+function closeStory(){ cancelAnimationFrame(S.raf); vid.pause(); $("#story").classList.remove("open"); }
+function playVid(){
+  vid.muted = !CONFIG.storySound;
+  const p = vid.play();
+  // si le téléphone refuse le son sans geste, on relance en muet plutôt que de bloquer
+  if (p && p.catch) p.catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
+}
+function loadStory(){
+  const A = CONFIG.aymen, hl = A.highlights[S.h], st = hl.stories[S.i];
+  S.video = !!st.video;
+  vid.hidden = !S.video;
+  if (S.video) { $("#s-media").innerHTML = ""; vid.src = st.video; vid.currentTime = 0; playVid(); }
+  else { vid.pause(); vid.removeAttribute("src"); vid.load(); $("#s-media").innerHTML = ph("st"+S.h+"-"+S.i, st.img, st.label, "", "", !!st.night); }
+  $("#s-av").innerHTML = avatar(A.username, 32, A.avatar);
+  $("#s-title").textContent = hl.title;
+  $("#s-time").textContent = st.time || "";
+  $("#bars").innerHTML = hl.stories.map((_,k) => `<div><i style="width:${k<S.i?100:0}%"></i></div>`).join("");
+  S.elapsed = 0; S.t0 = performance.now(); S.paused = false;
+  cancelAnimationFrame(S.raf); tick();
+}
+function tick(){
+  const bar = $("#bars").children[S.i]?.firstElementChild;
+  if (S.video) { // la barre suit la vidéo ; à la fin de la vidéo on passe à la suivante
+    const d = vid.duration || 0;
+    if (bar && d) bar.style.width = Math.min(100, vid.currentTime / d * 100) + "%";
+    if (vid.ended) return next();
+    S.raf = requestAnimationFrame(tick); return;
+  }
+  if (!CONFIG.storyDuration) { if (bar) bar.style.width = "100%"; return; }
+  const now = performance.now();
+  const e = S.paused ? S.elapsed : S.elapsed + (now - S.t0);
+  if (bar) bar.style.width = Math.min(100, e / CONFIG.storyDuration * 100) + "%";
+  if (e >= CONFIG.storyDuration) return next();
+  S.raf = requestAnimationFrame(tick);
+}
+function next(){
+  const A = CONFIG.aymen;
+  if (S.i < A.highlights[S.h].stories.length - 1) { S.i++; loadStory(); }
+  else if (S.h < A.highlights.length - 1) { S.h++; S.i = 0; loadStory(); }
+  else closeStory();
+}
+function prev(){
+  if (S.i > 0) { S.i--; loadStory(); }
+  else if (S.h > 0) { S.h--; S.i = CONFIG.aymen.highlights[S.h].stories.length - 1; loadStory(); }
+  else loadStory();
+}
+// tap à droite = suivante, tap à gauche = précédente, appui long = pause
+let downAt = 0;
+const stage = $("#stage");
+stage.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; downAt = performance.now(); if (!S.paused) { S.elapsed += performance.now() - S.t0; S.paused = true; } if (S.video) vid.pause(); });
+stage.addEventListener("pointerup", e => {
+  if (e.target.closest("button") || !downAt) return;
+  const held = performance.now() - downAt; downAt = 0;
+  S.paused = false; S.t0 = performance.now();
+  if (S.video && held >= 250) playVid();
+  if (held < 250) { const r = stage.getBoundingClientRect(); (e.clientX - r.left < r.width / 3) ? prev() : next(); }
+});
+$("#s-close").onclick = closeStory;
+
+showSearch();
+</script>
+</body>
